@@ -27,6 +27,7 @@ var (
 	}
 
 	resultsFile = "results.xml"
+	defaultPermission os.FileMode = 0744
 
 )
 
@@ -35,7 +36,7 @@ type config struct {
 	ScanTime string `yaml:"scan_time"`
 	WorkingFolder string `yaml:"working_folder"`
 	FileName string `yaml:"global_vulnerability_file_name"`
-	VulnerabilityReportConf VulnerabilityReport `yaml:"artifactory"`
+	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
 	NetworkRetry int `yaml:"network_retry"`
 	Webhook string `yaml:"webhook"`
 }
@@ -63,6 +64,9 @@ func (conf *config) unmarshalConfFromFile(file string) {
 }
 
 func (conf *config) OscapVulnerabilityScan() {
+
+	createDir(conf.WorkingFolder, defaultPermission)
+
 	vulnerabilityReport := conf.VulnerabilityReportConf
 	vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
 	
@@ -112,6 +116,13 @@ func fileExists(fileName string) bool{
         return false
     }
     return !info.IsDir()
+}
+
+func createDir(dir string, permission os.FileMode) {
+	err := os.MkdirAll(dir, permission)
+	if err != nil {
+		log.Fatalf("ErorCould not create Dir " + dir + " : " + fmt.Sprint(err))
+	}
 }
 
 func (conf *config) cleanFiles(filesToClean []string) {

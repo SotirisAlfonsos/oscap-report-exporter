@@ -1,4 +1,4 @@
-module vulnerability_management
+module oscap-report-exporter
 
 go 1.13
 
