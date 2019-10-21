@@ -5,7 +5,7 @@ import (
 	"log"
 	"flag"
 	"testing"
-	"github.com/carlescere/scheduler"
+	"github.com/jasonlvhit/gocron"
 	"oscap-report-exporter/oscap"
 )
 
@@ -23,9 +23,8 @@ func TestMain(m *testing.M) {
 	log.Printf(config.VulnerabilityReportConf.Password)
 	log.Printf(config.VulnerabilityReportConf.BaseVulnerabilityReportUrl)
 
-	scheduler.Every(600).Seconds().Run(config.OscapVulnerabilityScan)
+	gocron.Every(600).Seconds().Do(config.OscapVulnerabilityScan)
 
-	//Prevent job from exiting. Is that the right approvach?
-	runtime.Goexit()
+	<- gocron.Start()
 }
 
