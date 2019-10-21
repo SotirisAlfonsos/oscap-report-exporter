@@ -1,4 +1,4 @@
-# oscap-report-exporter
+# Oscap Report Exporter
 The purpose of this project is to provide a fully configurable scheduler for oscap scans. 
 
 ## Functionality
