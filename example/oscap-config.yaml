@@ -2,7 +2,7 @@
 scan_date: 'Mon'
 
 #Time on which the scan will be performed (HH:MM). Defaults to '23:00'
-scan_time: "15:23"
+scan_time: "23:00"
 
 #The working folder is the location where the global vulnerability reports file be downloaded,
 #and the location when the results of the scan will be stored. Defaults to '/tmp/downloads/'
