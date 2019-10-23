@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"fmt"
 	"flag"
 	"testing"
 	"oscap-report-exporter/oscap"
@@ -10,25 +11,37 @@ import (
 
 func TestMain(m *testing.M) {
 
-	// configFile := flag.String("config.file", "example/oscap-config.yaml", "the file that contains the configuration for oscap scan")
- //    flag.Parse()
+	configFile := "example/oscap-config.yaml"
+	config := oscap.GetConfig(configFile)
+	config.CleanFiles = false
 
-	// config := oscap.GetConfig(*configFile)
-	
-	// log.Printf(config.ScanDate)
-	// log.Printf(config.ScanTime)
-	// log.Printf(config.WorkingFolder)
-	// log.Printf(config.VulnerabilityReportConf.GlobalVulnerabilityReportHttpsLocation)
-	// log.Printf(config.VulnerabilityReportConf.UserName)
-	// log.Printf(config.VulnerabilityReportConf.Password)
-	// log.Printf(config.VulnerabilityReportConf.BaseVulnerabilityReportUrl)
+	config.OscapVulnerabilityScan()
+
+	log.Printf("Verify that report and downloaded files exist")
+	if !fileExists(config.WorkingFolder+"results.xml") || !fileExists(config.WorkingFolder+config.FileName) {
+		log.Fatalf("One of the files we expected does not exist. Fail the tests")
+	}
+
+	errRemoveDownload := os.Remove(config.WorkingFolder + config.FileName)
+	if errRemoveDownload != nil {
+		log.Fatal("Unable to remove " + config.FileName + " with error " + fmt.Sprint(errRemoveDownload))
+	}
+	errRemoveResults := os.Remove(config.WorkingFolder + "results.xml")
+	if errRemoveResults != nil {
+		log.Fatal("Unable to remove results.xml with error " + fmt.Sprint(errRemoveResults))
+	}
 
 	exitCode := m.Run()
 	os.Exit(exitCode)
+	
+}
 
-	//m.Run(config.OscapVulnerabilityScan)
-
-	//<- gocron.Start()
+func fileExists(fileName string) bool{
+	info, err := os.Stat(fileName)
+    if os.IsNotExist(err) {
+        return false
+    }
+    return !info.IsDir()
 }
 
 func TestConfigDefaults(t *testing.T) {

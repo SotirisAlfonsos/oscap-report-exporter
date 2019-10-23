@@ -70,8 +70,11 @@ func (conf *config) OscapVulnerabilityScan() {
 	createDir(conf.WorkingFolder, defaultPermission)
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
-	
+	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
+	if errDownload != nil {
+		log.Fatal("File download failed " + fmt.Sprint(errDownload))
+	}
+
 	err := conf.runOscapScan()
 	if err != nil {
 		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
