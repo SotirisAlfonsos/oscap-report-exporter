@@ -19,6 +19,7 @@ var (
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
 		NetworkRetry: 3,
 		Webhook: "http://localhost:8080",
+		CleanFiles: true,
 	}
 
 	DefaultVulnerabilityReportConf = VulnerabilityReport {
@@ -39,6 +40,7 @@ type config struct {
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
 	NetworkRetry int `yaml:"network_retry"`
 	Webhook string `yaml:"webhook"`
+	CleanFiles bool `yaml:"clean_files"`
 }
 
 func GetConfig(configFile string) config {
@@ -68,8 +70,11 @@ func (conf *config) OscapVulnerabilityScan() {
 	createDir(conf.WorkingFolder, defaultPermission)
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
-	
+	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
+	if errDownload != nil {
+		log.Fatal("File download failed " + fmt.Sprint(errDownload))
+	}
+
 	err := conf.runOscapScan()
 	if err != nil {
 		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
@@ -85,9 +90,10 @@ func (conf *config) OscapVulnerabilityScan() {
 		log.Fatalf("Error: Could not send data to webhook " + fmt.Sprint(errSendFile))
 	}
 
-	// filesToClean := []string{resultsFile, conf.FileName}
-	// conf.cleanFiles(filesToClean)
-	
+	if conf.CleanFiles {
+		filesToClean := []string{resultsFile, conf.FileName}
+		conf.cleanFiles(filesToClean)
+	}
 }
 
 func (conf *config) runOscapScan() error{
