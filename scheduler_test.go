@@ -10,6 +10,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	flag.Parse()
+	if testing.Short() {
+		os.Exit(m.Run())
+	}
 
 	configFile := "example/oscap-config.yaml"
 	config := oscap.GetConfig(configFile)
@@ -45,7 +49,6 @@ func fileExists(fileName string) bool{
 }
 
 func TestConfigDefaults(t *testing.T) {
-	log.Printf("Starting TestConfigDefaults")
 
 	configFileDefault := ""
 	configDefault := oscap.GetConfig(configFileDefault)
@@ -77,7 +80,6 @@ func TestConfigDefaults(t *testing.T) {
 }
 
 func TestConfigFromExampleFile(t *testing.T) {
-	log.Printf("Starting TestConfigFromExampleFile")
 	configFile := flag.String("config.file", "example/oscap-config.yaml", "the file that contains the configuration for oscap scan")
     flag.Parse()
 

@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"io/ioutil"
-	"fmt"
 	"bytes"
 	"net/http"
 )
@@ -17,10 +16,15 @@ type FileSender struct {
 func (sf *FileSender) SendFileToWebhook() error {
 	byteXml, err := sf.readFile()
 	if err != nil {
-		log.Printf("Error: reading " + sf.File + " : " + fmt.Sprint(err))
+		log.Printf("Error: reading " + sf.File )
+		return err
 	}
 
-	sf.sender(byteXml)
+	errWebhook := sf.sender(byteXml)
+	if errWebhook != nil {
+		log.Printf("Error: sending xml to webhook " + sf.Webhook )
+		return errWebhook
+	}
 
 	return nil
 }
@@ -61,9 +65,9 @@ func (sf *FileSender) sender(byteXml []byte) error{
 	// now POST it
 	resp, errHttp := client.Do(req)
 	if errHttp != nil {
-		fmt.Println("Posting the file to the webhook failed. ")
+		log.Printf("Posting the file to the webhook failed. ")
 		return errHttp
 	}
-	fmt.Println(resp.Status)
+	log.Printf( "Webhook response " + string(resp.Status) )
 	return nil
 }

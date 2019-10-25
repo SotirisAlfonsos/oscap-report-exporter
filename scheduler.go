@@ -24,8 +24,7 @@ func startScheduler(configFile string) {
 	log.Printf("Global vulnerability report url " + config.VulnerabilityReportConf.BaseVulnerabilityReportUrl + config.VulnerabilityReportConf.GlobalVulnerabilityReportHttpsLocation)
 	
 	if config.VulnerabilityReportConf.UserName != "" && config.VulnerabilityReportConf.Password != ""{
-		log.Printf(config.VulnerabilityReportConf.UserName)
-		log.Printf(config.VulnerabilityReportConf.Password)
+		log.Printf("Username " + config.VulnerabilityReportConf.UserName)
 	}	
 
 	job := &gocron.Job{}

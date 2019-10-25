@@ -80,7 +80,7 @@ func (conf *config) OscapVulnerabilityScan() {
 		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
 	}
 
-	if !fileExists(conf.WorkingFolder+ resultsFile) {
+	if !fileExists(conf.WorkingFolder + resultsFile) {
 		log.Fatalf("File " + conf.WorkingFolder + resultsFile + " does not exist (Or is a directory)")
 	}
 
