@@ -1,3 +1,5 @@
 language: go
 
+go_import_path: oscap-report-exporter
+
 script: go test ./... -v -short
