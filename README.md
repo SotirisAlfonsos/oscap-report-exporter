@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)
+
 # Oscap Report Exporter
 The purpose of this project is to provide a fully configurable scheduler for oscap scans. 
 
