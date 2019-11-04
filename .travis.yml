@@ -1,0 +1,5 @@
+language: go
+
+go_import_path: github.com/SotirisAlfonsos/oscap-report-exporter
+
+script: go test ./... -v -short

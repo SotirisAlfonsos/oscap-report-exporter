@@ -4,8 +4,6 @@ import (
 	"log"
     "os"
     "fmt"
-    "bytes"
-    "os/exec"
 	"gopkg.in/yaml.v2"
     "io/ioutil"
 )
@@ -55,7 +53,7 @@ func (conf *config) unmarshalConfFromFile(file string) {
 	if file != "" {
 		yamlFile, err := ioutil.ReadFile(file)
 	    if err != nil {
-	        log.Printf("yamlFile.Get err   #%v ", err)
+	        log.Fatalf("yamlFile.Get err %v ", err)
 	    }
 
 	    err = yaml.Unmarshal(yamlFile, conf)
@@ -72,23 +70,11 @@ func (conf *config) OscapVulnerabilityScan() {
 	vulnerabilityReport := conf.VulnerabilityReportConf
 	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
 	if errDownload != nil {
-		log.Fatal("File download failed " + fmt.Sprint(errDownload))
+		log.Fatalf("File download failed : %v", errDownload)
 	}
 
-	err := conf.runOscapScan()
-	if err != nil {
-		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
-	}
-
-	if !fileExists(conf.WorkingFolder + resultsFile) {
-		log.Fatalf("File " + conf.WorkingFolder + resultsFile + " does not exist (Or is a directory)")
-	}
-
-	fileSender := FileSender{conf.WorkingFolder+ resultsFile, conf.Webhook}
-	errSendFile := fileSender.SendFileToWebhook()
-	if errSendFile != nil {
-		log.Fatalf("Error: Could not send data to webhook " + fmt.Sprint(errSendFile))
-	}
+	RunOscapScan(conf.WorkingFolder, resultsFile, conf.FileName)
+	SendFileToWebhook(conf.WorkingFolder + resultsFile, conf.Webhook)
 
 	if conf.CleanFiles {
 		filesToClean := []string{resultsFile, conf.FileName}
@@ -96,38 +82,10 @@ func (conf *config) OscapVulnerabilityScan() {
 	}
 }
 
-func (conf *config) runOscapScan() error{
-    	
-	oscapCommand := "oscap xccdf eval --results " + resultsFile + " " + conf.FileName + " > log.out"
-	cmd := exec.Command("bash", "-c", oscapCommand)
-	cmd.Dir = conf.WorkingFolder
-	log.Printf("Running Oscap command " + cmd.String())
-
-	var stderr bytes.Buffer
-    cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Error during oscap scan " + string(stderr.Bytes()) + " " + fmt.Sprint(err) + ". Ignorring")
-		// return err
-	}
-
-	log.Printf("Results for oscap scan created in folder " + conf.WorkingFolder)
-	return nil
-}
-
-func fileExists(fileName string) bool{
-	info, err := os.Stat(fileName)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
-}
-
 func createDir(dir string, permission os.FileMode) {
 	err := os.MkdirAll(dir, permission)
 	if err != nil {
-		log.Fatalf("ErorCould not create Dir " + dir + " : " + fmt.Sprint(err))
+		log.Fatalf("ErorCould not create Dir " + dir + " : %v ", err)
 	}
 }
 

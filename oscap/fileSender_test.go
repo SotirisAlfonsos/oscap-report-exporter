@@ -5,26 +5,24 @@ import (
 )
 
 var (
-	fileSenderCorrect = FileSender{"../example/example.xml", "http://localhost:8080"}
-	fileSenderNoFile = FileSender{"../example/example-not-exists.xml", "http://localhost:8080"}
+	fileLoc = "../example/example.xml"
+	fileLocFalse = "../example/example-not-exists.xml"
+	webhook = "http://localhost:8080"
 )
 
 func TestSendFileToWebhook(t *testing.T) {
-	err := fileSenderCorrect.SendFileToWebhook()
-	if err != nil {
-		t.Errorf("Unexpected error, received %v", err)
-	}
+	SendFileToWebhook(fileLoc, webhook)
 }
 
 func TestReadFile(t *testing.T) {
-	byteArray, err := fileSenderCorrect.readFile()
+	byteArray, err := readFile(fileLoc)
 	if err != nil || len(byteArray) <= 0 {
 		t.Errorf("Unexpected error, received %v", err)
 	}
 }
 
 func TestReadFileCouldNotFindFile(t *testing.T) {
-	_, err := fileSenderNoFile.readFile()
+	_, err := readFile(fileLocFalse)
 	if err == nil  {
 		t.Errorf("We should have received an error. File does not exist")
 	}
