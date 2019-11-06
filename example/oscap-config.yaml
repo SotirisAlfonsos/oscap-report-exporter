@@ -25,13 +25,12 @@ clean_files: false
 #Location of the global vulnerability report. Defaults to the official Red Hat location.
 #You can also configure your own location. Basic auth credentials will be used if provided for the download.
 vulnerability_report:
-  global_vulnerability_report_https_location: 'security/data/metrics/ds/com.redhat.rhsa-all.ds.xml'
+  global_vulnerability_report_https_location: 'https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml'
   username: ''
   password: ''
-  base_vulnerability_report_url: 'https://www.redhat.com/'
 
 email_config:
-  smtp_smarthost: 'smarthost'
-  from: 'from'
-  to: 'to'
+  smtp_smarthost: ''
+  from: ''
+  to: ''
   password: ''
