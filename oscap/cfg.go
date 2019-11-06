@@ -1,142 +1,130 @@
 package oscap
 
 import (
-	"log"
-    "os"
-    "fmt"
-    "bytes"
-    "os/exec"
+	"fmt"
 	"gopkg.in/yaml.v2"
-    "io/ioutil"
+	"io/ioutil"
+	"log"
+	"os"
 )
 
 var (
-	DefaultConfig = config {
-		ScanDate: "Sun",
-		ScanTime: "23:00",
-		WorkingFolder: "/tmp/downloads/",
-		FileName: "com.redhat.rhsa-all.ds.xml",
+	// DefaultConfig provides a default configuration for oscap exporter
+	DefaultConfig = Config{
+		ScanDate:                "Sun",
+		ScanTime:                "23:00",
+		WorkingFolder:           "/tmp/downloads/",
+		FileName:                "com.redhat.rhsa-all.ds.xml",
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
-		NetworkRetry: 3,
-		Webhook: "http://localhost:8080",
-		CleanFiles: true,
+		Webhook:                 "http://localhost:8080",
+		CleanFiles:              true,
 	}
 
-	DefaultVulnerabilityReportConf = VulnerabilityReport {
-		GlobalVulnerabilityReportHttpsLocation: "security/data/metrics/ds/com.redhat.rhsa-all.ds.xml",
-		BaseVulnerabilityReportUrl: "https://www.redhat.com/",
+	// DefaultVulnerabilityReportConf provides a default configuration for
+	DefaultVulnerabilityReportConf = VulnerabilityReport{
+		GlobalVulnerabilityReportHTTPSLocation: "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml",
 	}
 
-	resultsFile = "results.xml"
+	resultsFile                   = "results.xml"
+	reportFile                    = "report.html"
 	defaultPermission os.FileMode = 0744
-
 )
 
-type config struct {
-	ScanDate string `yaml:"scan_date"`
-	ScanTime string `yaml:"scan_time"`
-	WorkingFolder string `yaml:"working_folder"`
-	FileName string `yaml:"global_vulnerability_file_name"`
+// Config contains the configuration from the oscap config file
+type Config struct {
+	ScanDate                string              `yaml:"scan_date"`
+	ScanTime                string              `yaml:"scan_time"`
+	WorkingFolder           string              `yaml:"working_folder"`
+	FileName                string              `yaml:"global_vulnerability_file_name"`
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
-	NetworkRetry int `yaml:"network_retry"`
-	Webhook string `yaml:"webhook"`
-	CleanFiles bool `yaml:"clean_files"`
+	Webhook                 string              `yaml:"webhook"`
+	CleanFiles              bool                `yaml:"clean_files"`
+	EmailConfiguration      *EmailConf          `yaml:"email_config,omitempty"`
 }
 
-func GetConfig(configFile string) config {
-	var conf config
+// GetConfig unmarshars the received conf file to the config struct
+func GetConfig(configFile string) Config {
+	var conf Config
 	conf.unmarshalConfFromFile(configFile)
 
-    return conf
+	return conf
 }
 
-func (conf *config) unmarshalConfFromFile(file string) {
+func (conf *Config) unmarshalConfFromFile(file string) {
 	*conf = DefaultConfig
 	if file != "" {
 		yamlFile, err := ioutil.ReadFile(file)
-	    if err != nil {
-	        log.Printf("yamlFile.Get err   #%v ", err)
-	    }
+		if err != nil {
+			log.Fatalf("Error: yamlFile.Get err %v ", err)
+		}
 
-	    err = yaml.Unmarshal(yamlFile, conf)
-	    if err != nil {
-	        log.Fatalf("Unmarshal: %v", err)
-	    }
+		err = yaml.Unmarshal(yamlFile, conf)
+		if err != nil {
+			log.Fatalf("Error: Unmarshal: %v", err)
+		}
 	}
 }
 
-func (conf *config) OscapVulnerabilityScan() {
+// OscapVulnerabilityScan is the main function that handles the scan and forwarding of all reports
+func (conf *Config) OscapVulnerabilityScan() {
 
 	createDir(conf.WorkingFolder, defaultPermission)
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName, conf.NetworkRetry)
+	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName)
 	if errDownload != nil {
-		log.Fatal("File download failed " + fmt.Sprint(errDownload))
+		log.Fatalf("Error: File download failed : %v", errDownload)
 	}
 
-	err := conf.runOscapScan()
-	if err != nil {
-		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
+	errOscapScan := RunOscapScan(conf.WorkingFolder, resultsFile, reportFile, conf.FileName)
+	if errOscapScan != nil {
+		log.Fatalf("Error: Cound not run oscap scan in working folder " + conf.WorkingFolder + " : " + fmt.Sprint(errOscapScan))
 	}
 
-	if !fileExists(conf.WorkingFolder+ resultsFile) {
-		log.Fatalf("File " + conf.WorkingFolder + resultsFile + " does not exist (Or is a directory)")
+	errWebhook := SendFileToWebhook(conf.WorkingFolder, resultsFile, conf.Webhook)
+	if errWebhook != nil {
+		log.Fatalf("Error: sending xml to webhook " + conf.Webhook + " : " + fmt.Sprint(errWebhook))
 	}
 
-	fileSender := FileSender{conf.WorkingFolder+ resultsFile, conf.Webhook}
-	errSendFile := fileSender.SendFileToWebhook()
-	if errSendFile != nil {
-		log.Fatalf("Error: Could not send data to webhook " + fmt.Sprint(errSendFile))
+	errEmail := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder + reportFile)
+	if errEmail != nil {
+		log.Fatalf("Error: Could not send report file via Email " + fmt.Sprint(errEmail))
 	}
 
 	if conf.CleanFiles {
-		filesToClean := []string{resultsFile, conf.FileName}
+		filesToClean := []string{resultsFile, reportFile, conf.FileName}
 		conf.cleanFiles(filesToClean)
 	}
-}
-
-func (conf *config) runOscapScan() error{
-    	
-	oscapCommand := "oscap xccdf eval --results " + resultsFile + " " + conf.FileName + " > log.out"
-	cmd := exec.Command("bash", "-c", oscapCommand)
-	cmd.Dir = conf.WorkingFolder
-	log.Printf("Running Oscap command " + cmd.String())
-
-	var stderr bytes.Buffer
-    cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Error during oscap scan " + string(stderr.Bytes()) + " " + fmt.Sprint(err) + ". Ignorring")
-		// return err
-	}
-
-	log.Printf("Results for oscap scan created in folder " + conf.WorkingFolder)
-	return nil
-}
-
-func fileExists(fileName string) bool{
-	info, err := os.Stat(fileName)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
 }
 
 func createDir(dir string, permission os.FileMode) {
 	err := os.MkdirAll(dir, permission)
 	if err != nil {
-		log.Fatalf("ErorCould not create Dir " + dir + " : " + fmt.Sprint(err))
+		log.Fatalf("Eror: Could not create Dir "+dir+" : %v ", err)
 	}
 }
 
-func (conf *config) cleanFiles(filesToClean []string) {
+func (conf *Config) cleanFiles(filesToClean []string) {
 	for _, fileName := range filesToClean {
 		err := os.Remove(conf.WorkingFolder + fileName)
 		if err != nil {
-			log.Fatal("Unable to remove " + fileName + " with error " + fmt.Sprint(err))
+			log.Fatal("Error: Unable to remove " + fileName + " with error " + fmt.Sprint(err))
 		}
 		log.Printf("Removed file " + fileName)
 	}
+}
+
+// Verify that the results file does exist
+func fileExists(fileName string) error {
+	info, err := os.Stat(fileName)
+	if os.IsNotExist(err) {
+		log.Printf("Error: File " + fileName + " does not exist")
+		return err
+	} else if info.IsDir() {
+		log.Printf("Error: " + fileName + " is a directory")
+		return err
+	} else {
+		return nil
+	}
+
 }

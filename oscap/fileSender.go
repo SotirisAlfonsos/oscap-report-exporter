@@ -1,69 +1,72 @@
 package oscap
 
 import (
-	"log"
-	"os"
-	"io/ioutil"
-	"fmt"
 	"bytes"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
-type FileSender struct {
-	File string
-	Webhook string
-}
-
-func (sf *FileSender) SendFileToWebhook() error {
-	byteXml, err := sf.readFile()
-	if err != nil {
-		log.Printf("Error: reading " + sf.File + " : " + fmt.Sprint(err))
+// SendFileToWebhook handles sending the created results xml file to the defined webhook
+func SendFileToWebhook(workingDir string, file string, webhook string) error {
+	byteXML, errReadFile := readFile(workingDir, file)
+	if errReadFile != nil {
+		return errReadFile
 	}
 
-	sf.sender(byteXml)
+	errWebhook := sender(byteXML, webhook)
+	if errWebhook != nil {
+		return errWebhook
+	}
 
 	return nil
+
 }
 
-func (sf *FileSender) readFile() ([]byte, error) {
+// Read the results file and return its content in a bytearray
+func readFile(workingDir string, file string) ([]byte, error) {
 
 	// Open our xmlFile
-    xmlFile, errOpen := os.Open(sf.File)
-    if errOpen != nil {
-        log.Printf("Error: Could not open file")
-        return nil, errOpen
-    }
-    
-    log.Printf("Successfully Opened " + sf.File)
-    defer xmlFile.Close()
+	filePath := filepath.Join(workingDir, filepath.Clean(file))
+	xmlFile, errOpen := os.Open(filePath)
+	if errOpen != nil {
+		log.Printf("Error: Could not open file " + filePath)
+		return nil, errOpen
+	}
 
-    // read our opened xmlFile as a byte array.
-    byteValue, errRead := ioutil.ReadAll(xmlFile)
-    if errRead != nil {
-        log.Printf("Error: Could not read file")
-        return nil, errRead
-    }
+	log.Printf("Successfully Opened " + file)
+	defer xmlFile.Close()
+
+	// read our opened xmlFile as a byte array.
+	byteValue, errRead := ioutil.ReadAll(xmlFile)
+	if errRead != nil {
+		log.Printf("Error: Could not read file " + filePath)
+		return nil, errRead
+	}
 	return byteValue, nil
 }
 
-func (sf *FileSender) sender(byteXml []byte) error{
+//Send bytearray to webhook in xml format
+func sender(byteXML []byte, webhook string) error {
 	client := &http.Client{}
 	// build a new request, but not doing the POST yet
-	req, errMakeReq := http.NewRequest("POST", sf.Webhook, bytes.NewBuffer(byteXml))
+	req, errMakeReq := http.NewRequest("POST", webhook, bytes.NewBuffer(byteXML))
 	if errMakeReq != nil {
-		log.Printf("Could not create new request containing the xml bytearray. ")
+		log.Printf("Error: Could not create new request containing the xml bytearray. ")
 		return errMakeReq
 	}
 
-    log.Printf("Sending results to webhook " + sf.Webhook)
+	log.Printf("Sending results to webhook " + webhook)
 
 	req.Header.Add("Content-Type", "application/xml; charset=utf-8")
 	// now POST it
-	resp, errHttp := client.Do(req)
-	if errHttp != nil {
-		fmt.Println("Posting the file to the webhook failed. ")
-		return errHttp
+	resp, errHTTP := client.Do(req)
+	if errHTTP != nil {
+		log.Printf("Error: Posting the file to the webhook failed. ")
+		return errHTTP
 	}
-	fmt.Println(resp.Status)
+	log.Printf("Webhook response " + string(resp.Status))
 	return nil
 }
