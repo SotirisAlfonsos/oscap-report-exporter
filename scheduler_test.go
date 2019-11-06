@@ -1,9 +1,7 @@
 package main
 
 import (
-	"log"
 	"os"
-	"fmt"
 	"flag"
 	"testing"
 	"oscap-report-exporter/oscap"
@@ -15,37 +13,29 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
-	configFile := "example/oscap-config.yaml"
-	config := oscap.GetConfig(configFile)
-	config.CleanFiles = false
+	// configFile := "example/oscap-config.yaml"
+	// config := oscap.GetConfig(configFile)
+	// config.CleanFiles = false
 
-	config.OscapVulnerabilityScan()
+	// config.OscapVulnerabilityScan()
 
-	log.Printf("Verify that report and downloaded files exist")
-	if !fileExists(config.WorkingFolder+"results.xml") || !fileExists(config.WorkingFolder+config.FileName) {
-		log.Fatalf("One of the files we expected does not exist. Fail the tests")
-	}
+	// log.Printf("Verify that report and downloaded files exist")
+	// if !fileExists(config.WorkingFolder+"results.xml") || !fileExists(config.WorkingFolder+config.FileName) {
+	// 	log.Fatalf("One of the files we expected does not exist. Fail the tests")
+	// }
 
-	errRemoveDownload := os.Remove(config.WorkingFolder + config.FileName)
-	if errRemoveDownload != nil {
-		log.Fatal("Unable to remove " + config.FileName + " with error " + fmt.Sprint(errRemoveDownload))
-	}
-	errRemoveResults := os.Remove(config.WorkingFolder + "results.xml")
-	if errRemoveResults != nil {
-		log.Fatal("Unable to remove results.xml with error " + fmt.Sprint(errRemoveResults))
-	}
+	// errRemoveDownload := os.Remove(config.WorkingFolder + config.FileName)
+	// if errRemoveDownload != nil {
+	// 	log.Fatal("Unable to remove " + config.FileName + " with error " + fmt.Sprint(errRemoveDownload))
+	// }
+	// errRemoveResults := os.Remove(config.WorkingFolder + "results.xml")
+	// if errRemoveResults != nil {
+	// 	log.Fatal("Unable to remove results.xml with error " + fmt.Sprint(errRemoveResults))
+	// }
 
 	exitCode := m.Run()
 	os.Exit(exitCode)
 	
-}
-
-func fileExists(fileName string) bool{
-	info, err := os.Stat(fileName)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
 }
 
 func TestConfigDefaults(t *testing.T) {
@@ -77,6 +67,10 @@ func TestConfigDefaults(t *testing.T) {
 		t.Errorf("The default global vulnerability report url for the scan is wrong " + gotVulRepUrl + 
 			". Should be " + expectedVulRepUrl)
 	}
+
+	if configDefault.EmailConfiguration != nil {
+		t.Errorf("The default email configuration is wrong %v . Should be nil", configDefault.EmailConfiguration )
+	}
 }
 
 func TestConfigFromExampleFile(t *testing.T) {
@@ -107,8 +101,26 @@ func TestConfigFromExampleFile(t *testing.T) {
 	expectedVulRepUrl := "https://www.redhat.com/" + "security/data/metrics/ds/com.redhat.rhsa-all.ds.xml"
 	gotVulRepUrl := config.VulnerabilityReportConf.BaseVulnerabilityReportUrl + config.VulnerabilityReportConf.GlobalVulnerabilityReportHttpsLocation
 	if gotVulRepUrl != expectedVulRepUrl {
-		t.Errorf("The default vulnerability report url as it was parsed by the exaple oscap config is wrong " + 
+		t.Errorf("The vulnerability report url as it was parsed by the exaple oscap config is wrong " + 
 			gotVulRepUrl + ". Should be " + expectedVulRepUrl)
+	}
+
+	expectedEmailSmarthost := "smarthost"
+	if config.EmailConfiguration.Smarthost != expectedEmailSmarthost {
+		t.Errorf("The smarthost as it was parsed by the exaple oscap config is wrong " + 
+			config.EmailConfiguration.Smarthost + ". Should be " + expectedEmailSmarthost)
+	}
+
+	expectedEmailTo := "to"
+	if config.EmailConfiguration.To != expectedEmailTo {
+		t.Errorf("The To as it was parsed by the exaple oscap config is wrong " + 
+			config.EmailConfiguration.To + ". Should be " + expectedEmailTo)
+	}
+
+	expectedEmailPassword := ""
+	if config.EmailConfiguration.Password != expectedEmailPassword {
+		t.Errorf("The username as it was parsed by the exaple oscap config is wrong " + 
+			config.EmailConfiguration.Password + ". Should be " + expectedEmailPassword +".")
 	}
 }
 

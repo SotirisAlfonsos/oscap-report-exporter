@@ -8,16 +8,18 @@ import (
 	"net/http"
 )
 
-func SendFileToWebhook(file string, webhook string) {
-	byteXml, err := readFile(file)
-	if err != nil {
-		log.Fatalf("Error: reading " + file + " : %v ", err)
+func SendFileToWebhook(file string, webhook string) error {
+	byteXml, errReadFile := readFile(file)
+	if errReadFile != nil {
+		return errReadFile
 	}
 
 	errWebhook := sender(byteXml, webhook)
 	if errWebhook != nil {
-		log.Printf("Error: sending xml to webhook " + webhook + " : %v ", errWebhook)
+		return errWebhook
 	}
+
+	return nil
 
 }
 
@@ -27,7 +29,7 @@ func readFile(file string) ([]byte, error) {
 	// Open our xmlFile
     xmlFile, errOpen := os.Open(file)
     if errOpen != nil {
-        log.Printf("Error: Could not open file")
+        log.Printf("Error: Could not open file " + file)
         return nil, errOpen
     }
     
@@ -37,14 +39,14 @@ func readFile(file string) ([]byte, error) {
     // read our opened xmlFile as a byte array.
     byteValue, errRead := ioutil.ReadAll(xmlFile)
     if errRead != nil {
-        log.Printf("Error: Could not read file")
+        log.Printf("Error: Could not read file " + file)
         return nil, errRead
     }
 	return byteValue, nil
 }
 
 //Send bytearray to webhook in xml format
-func sender(byteXml []byte, webhook string) error{
+func sender(byteXml []byte, webhook string) error {
 	client := &http.Client{}
 	// build a new request, but not doing the POST yet
 	req, errMakeReq := http.NewRequest("POST", webhook, bytes.NewBuffer(byteXml))

@@ -2,22 +2,23 @@ package oscap
 
 import (
 	"log"
-	"fmt"
-	"os"
 	"bytes"
     "os/exec"
 )
 
-func RunOscapScan(workingFolder string, resultsFile string, fileName string) {
+func RunOscapScan(workingFolder string, resultsFile string, fileName string) error {
 
-	err := runScan(workingFolder, resultsFile, fileName)
-	if err != nil {
-		log.Fatal("Error during oscap scan " + fmt.Sprint(err))
+	errScan := runScan(workingFolder, resultsFile, fileName)
+	if errScan != nil {
+		return errScan
+	}
+	
+	errFileExists := fileExists(workingFolder + resultsFile)
+	if errFileExists != nil {
+		return errFileExists
 	}
 
-	if !fileExists(workingFolder + resultsFile) {
-		log.Fatalf("File " + workingFolder + resultsFile + " does not exist (Or is a directory)")
-	}
+	return nil
 }
 
 // Run oscap scan and store the results in the working folder
@@ -39,24 +40,17 @@ func runScan(workingFolder string, resultsFile string, fileName string) error{
 		if exitError, ok := err.(*exec.ExitError); ok {
         	switch exitError.ExitCode() {
         		case 1:
-        			log.Fatalf("Error: During oscap evaluation %v", err)
+        			log.Printf("Error: During oscap evaluation")
+        			return err
         		case 2:
         			log.Printf("At least one of the rules failed.")
         	}
     	}else {
-    		log.Fatalf("Unexpected error %v", err)
+    		log.Printf("Error: Unexpected error during oscap evaluation")
+    		return err
     	}
 	}
 
 	log.Printf("Results for oscap scan created in folder " + workingFolder)
 	return nil
-}
-
-// Verify that the results file does exist
-func fileExists(fileName string) bool{
-	info, err := os.Stat(fileName)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
 }
