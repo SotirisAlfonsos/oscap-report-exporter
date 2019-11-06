@@ -1,4 +1,5 @@
-![Build Status](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)
+[![Build Status](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)
+[![Report card](https://goreportcard.com/badge/github.com/SotirisAlfonsos/oscap-report-exporter)](https://goreportcard.com/report/github.com/SotirisAlfonsos/oscap-report-exporter)
 
 # Oscap Report Exporter
 The purpose of this project is to provide a fully configurable scheduler for oscap scans. 
