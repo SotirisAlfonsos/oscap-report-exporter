@@ -3,7 +3,6 @@ package oscap
 import (
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 )
 
