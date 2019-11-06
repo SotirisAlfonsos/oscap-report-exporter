@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)
+[![Build Status](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter.svg)](https://travis-ci.org/SotirisAlfonsos/oscap-report-exporter)
 [![Report card](https://goreportcard.com/badge/github.com/SotirisAlfonsos/oscap-report-exporter)](https://goreportcard.com/report/github.com/SotirisAlfonsos/oscap-report-exporter)
 
 # Oscap Report Exporter
