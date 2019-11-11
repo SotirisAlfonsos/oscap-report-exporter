@@ -1,8 +1,6 @@
 package oscap
 
 import (
-	"fmt"
-	"log"
 	"testing"
 )
 
@@ -29,6 +27,15 @@ func TestSendEmailCoundNotConctactSmarthost(t *testing.T) {
 	err := emailConf.SendFileViaEmail(reportPath)
 	if err == nil {
 		t.Errorf("Should be able to send email to " + to + ". Smarthost " + smarthost + " does not exist.")
+	}
+
+}
+
+func TestNoAuth(t *testing.T) {
+	emailConf := EmailConf{smarthost, from, to, password}
+	auth := emailConf.configureAuth()
+	if auth != nil {
+		t.Errorf("Auth should be nil since no pwd is provided. Instead it was %v", auth)
 	}
 
 }
