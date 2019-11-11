@@ -59,6 +59,9 @@ func TestConfigDefaults(t *testing.T) {
 		t.Errorf("The default working folder for the scan is wrong " + configDefault.FileName +
 			". Should be " + oscap.DefaultConfig.FileName)
 	}
+	if configDefault.Webhook != "" {
+		t.Errorf("The default webhook configuration is wrong %v . Should be nil", configDefault.Webhook)
+	}
 	expectedVulRepURL := oscap.DefaultConfig.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
 	gotVulRepURL := configDefault.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
 	if gotVulRepURL != expectedVulRepURL {
@@ -71,12 +74,11 @@ func TestConfigDefaults(t *testing.T) {
 	}
 }
 
-func TestConfigFromExampleFile(t *testing.T) {
-	configFile := flag.String("config.file", "example/oscap-config.yaml", "the file that contains the configuration for oscap scan")
-	flag.Parse()
+func TestConfigFromTestFullFile(t *testing.T) {
+	configFile := "test-files/oscap-full-config.yaml"
+	config := oscap.GetConfig(configFile)
 
 	dateExpected := "Mon"
-	config := oscap.GetConfig(*configFile)
 	if config.ScanDate != dateExpected {
 		t.Errorf("The date as it was parsed by the exaple oscap config is wrong " + config.ScanDate +
 			". Should be " + dateExpected)
@@ -95,6 +97,11 @@ func TestConfigFromExampleFile(t *testing.T) {
 	if config.FileName != globVulFileName {
 		t.Errorf("The vulnerability file name as it was parsed by the exaple oscap config is wrong " + config.FileName +
 			". Should be " + globVulFileName)
+	}
+	webhook := "http://localhost:8080"
+	if config.Webhook != webhook {
+		t.Errorf("The webhook as it was parsed by the exaple oscap config is wrong " + config.Webhook +
+			". Should be " + webhook)
 	}
 	expectedVulRepURL := "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml"
 	gotVulRepURL := config.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
@@ -119,5 +126,19 @@ func TestConfigFromExampleFile(t *testing.T) {
 	if config.EmailConfiguration.Password != expectedEmailPassword {
 		t.Errorf("The password as it was parsed by the exaple oscap config is wrong " +
 			config.EmailConfiguration.Password + ". Should be " + expectedEmailPassword + ".")
+	}
+}
+
+func TestConfigFromTestOmitedFile(t *testing.T) {
+	configFile := "test-files/oscap-omited-config.yaml"
+	config := oscap.GetConfig(configFile)
+
+	if config.Webhook != "" {
+		t.Errorf("The webhook as it was parsed by the exaple oscap config is wrong " + config.Webhook +
+			". Should be empty string")
+	}
+
+	if config.EmailConfiguration != nil {
+		t.Errorf("The email configuration from the exaple oscap config should be nil.")
 	}
 }

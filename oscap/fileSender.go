@@ -11,6 +11,11 @@ import (
 
 // SendFileToWebhook handles sending the created results xml file to the defined webhook
 func SendFileToWebhook(workingDir string, file string, webhook string) error {
+
+	if webhook == "" {
+		return nil
+	}
+
 	byteXML, errReadFile := readFile(workingDir, file)
 	if errReadFile != nil {
 		return errReadFile

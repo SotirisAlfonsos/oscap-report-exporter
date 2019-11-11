@@ -16,7 +16,6 @@ var (
 		WorkingFolder:           "/tmp/downloads/",
 		FileName:                "com.redhat.rhsa-all.ds.xml",
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
-		Webhook:                 "http://localhost:8080",
 		CleanFiles:              true,
 	}
 
@@ -37,7 +36,7 @@ type Config struct {
 	WorkingFolder           string              `yaml:"working_folder"`
 	FileName                string              `yaml:"global_vulnerability_file_name"`
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
-	Webhook                 string              `yaml:"webhook"`
+	Webhook                 string              `yaml:"webhook,omitempty"`
 	CleanFiles              bool                `yaml:"clean_files"`
 	EmailConfiguration      *EmailConf          `yaml:"email_config,omitempty"`
 }
@@ -71,24 +70,24 @@ func (conf *Config) OscapVulnerabilityScan() {
 	createDir(conf.WorkingFolder, defaultPermission)
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName)
-	if errDownload != nil {
+	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder + conf.FileName); errDownload != nil {
 		log.Fatalf("Error: File download failed : %v", errDownload)
 	}
 
-	errOscapScan := RunOscapScan(conf.WorkingFolder, resultsFile, reportFile, conf.FileName)
-	if errOscapScan != nil {
+	if errOscapScan := RunOscapScan(conf.WorkingFolder, resultsFile, reportFile, conf.FileName); errOscapScan != nil {
 		log.Fatalf("Error: Cound not run oscap scan in working folder " + conf.WorkingFolder + " : " + fmt.Sprint(errOscapScan))
 	}
 
-	errWebhook := SendFileToWebhook(conf.WorkingFolder, resultsFile, conf.Webhook)
-	if errWebhook != nil {
-		log.Fatalf("Error: sending xml to webhook " + conf.Webhook + " : " + fmt.Sprint(errWebhook))
+	if conf.Webhook != "" {
+		if errWebhook := SendFileToWebhook(conf.WorkingFolder, resultsFile, conf.Webhook); errWebhook != nil {
+			log.Fatalf("Error: sending xml to webhook " + conf.Webhook + " : " + fmt.Sprint(errWebhook))
+		}
 	}
 
-	errEmail := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder + reportFile)
-	if errEmail != nil {
-		log.Fatalf("Error: Could not send report file via Email " + fmt.Sprint(errEmail))
+	if conf.EmailConfiguration != nil {
+		if errEmail := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder + reportFile); errEmail != nil {
+			log.Fatalf("Error: Could not send report file via Email " + fmt.Sprint(errEmail))
+		}
 	}
 
 	if conf.CleanFiles {

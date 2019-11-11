@@ -54,15 +54,19 @@ func (emailconf *EmailConf) sendEmail(filePath string) error {
 		return errAttach
 	}
 
-	// add headers
-	// m.AddHeader("X-CUSTOMER-id", "xxxxx")
-	log.Printf(strings.Split(emailconf.Smarthost, ":")[0])
 	// send it
-	auth := smtp.PlainAuth("", emailconf.From, emailconf.Password, strings.Split(emailconf.Smarthost, ":")[0])
-	if errSendEmail := email.Send(emailconf.Smarthost, auth, m); errSendEmail != nil {
+	if errSendEmail := email.Send(emailconf.Smarthost, emailconf.configureAuth(), m); errSendEmail != nil {
 		log.Printf("Error: Could not send email via smarthost " + emailconf.Smarthost + " from user " + emailconf.From + " to user " + emailconf.To)
 		return errSendEmail
 	}
 
 	return nil
+}
+
+func (emailconf *EmailConf) configureAuth() smtp.Auth {
+	if emailconf.Password != "" {
+		return smtp.PlainAuth("", emailconf.From, emailconf.Password, strings.Split(emailconf.Smarthost, ":")[0])
+	} else {
+		return nil
+	}
 }
