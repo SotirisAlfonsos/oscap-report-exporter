@@ -2,33 +2,43 @@ package oscap
 
 import (
 	"bytes"
-	"log"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"os/exec"
+	"oscap-report-exporter/common"
 )
 
-// RunOscapScan runs the scan on the host machine
-func RunOscapScan(workingFolder string, resultsFile string, reportFile string, fileName string) error {
+// OScan contains some configuration for the execution of the scan
+type OScan struct {
+	logger        log.Logger
+	workingFolder string
+	resultsFile   string
+	reportFile    string
+	fileName      string
+}
 
-	errScan := runScan(workingFolder, resultsFile, reportFile, fileName)
-	if errScan != nil {
-		return errScan
+// RunOscapScan runs the scan on the host machine
+func (oscan *OScan) RunOscapScan() error {
+
+	if err := oscan.runScan(); err != nil {
+		return err
 	}
 
-	errFileExists := fileExists(workingFolder + resultsFile)
-	if errFileExists != nil {
-		return errFileExists
+	if err := common.FileExists(oscan.workingFolder + oscan.resultsFile); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // Run oscap scan and store the results in the working folder
-func runScan(workingFolder string, resultsFile string, reportFile string, fileName string) error {
+func (oscan *OScan) runScan() error {
 
-	oscapCommand := "oscap xccdf eval --results " + resultsFile + " --report " + reportFile + " " + fileName + " > log.out"
+	oscapCommand := "oscap xccdf eval --results " + oscan.resultsFile + " --report " + oscan.reportFile + " " + oscan.fileName + " > log.out"
 	cmd := exec.Command("bash", "-c", oscapCommand)
-	cmd.Dir = workingFolder
-	log.Printf("Running Oscap command " + cmd.String())
+	cmd.Dir = oscan.workingFolder
+	level.Info(oscan.logger).Log("msg", "Running Oscap command "+cmd.String())
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -41,17 +51,14 @@ func runScan(workingFolder string, resultsFile string, reportFile string, fileNa
 		if exitError, ok := err.(*exec.ExitError); ok {
 			switch exitError.ExitCode() {
 			case 1:
-				log.Printf("Error: During oscap evaluation")
-				return err
+				return errors.Wrap(err, "could not complete oscap evaluation successfully. Exit code was "+string(exitError.ExitCode()))
 			case 2:
-				log.Printf("At least one of the rules failed.")
+				level.Info(oscan.logger).Log("msg", "at least one of the rules failed")
 			}
 		} else {
-			log.Printf("Error: Unexpected error during oscap evaluation")
-			return err
+			return errors.Wrap(err, "unexpected error during oscap evaluation")
 		}
 	}
-
-	log.Printf("Results for oscap scan created in folder " + workingFolder)
+	level.Info(oscan.logger).Log("msg", "Results for oscap scan created in folder "+oscan.workingFolder)
 	return nil
 }

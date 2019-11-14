@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/go-kit/kit/log"
 	"os"
 	"oscap-report-exporter/oscap"
+	"oscap-report-exporter/oscapLogger"
 	"testing"
 )
 
@@ -38,10 +41,20 @@ func TestMain(m *testing.M) {
 
 }
 
+func getLogger() log.Logger {
+	allowLevel := &oscapLogger.AllowedLevel{}
+	if err := allowLevel.Set("debug"); err != nil {
+		fmt.Printf("%v", err)
+	}
+	return oscapLogger.New(allowLevel)
+}
+
 func TestConfigDefaults(t *testing.T) {
 
+	logger := getLogger()
+
 	configFileDefault := ""
-	configDefault := oscap.GetConfig(configFileDefault)
+	configDefault := oscap.GetConfig(configFileDefault, logger)
 
 	if configDefault.ScanDate != oscap.DefaultConfig.ScanDate {
 		t.Errorf("The date as it was parsed by the exaple oscap config is wrong " + configDefault.ScanDate +
@@ -75,8 +88,11 @@ func TestConfigDefaults(t *testing.T) {
 }
 
 func TestConfigFromTestFullFile(t *testing.T) {
+
+	logger := getLogger()
+
 	configFile := "test-files/oscap-full-config.yaml"
-	config := oscap.GetConfig(configFile)
+	config := oscap.GetConfig(configFile, logger)
 
 	dateExpected := "Mon"
 	if config.ScanDate != dateExpected {
@@ -130,8 +146,10 @@ func TestConfigFromTestFullFile(t *testing.T) {
 }
 
 func TestConfigFromTestOmitedFile(t *testing.T) {
+	logger := getLogger()
+
 	configFile := "test-files/oscap-omited-config.yaml"
-	config := oscap.GetConfig(configFile)
+	config := oscap.GetConfig(configFile, logger)
 
 	if config.Webhook != "" {
 		t.Errorf("The webhook as it was parsed by the exaple oscap config is wrong " + config.Webhook +
