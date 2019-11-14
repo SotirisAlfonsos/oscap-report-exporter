@@ -50,7 +50,6 @@ email_config:
   smtp_smarthost: ''
   from: ''
   to: ''
-  username: ''
   password: ''
 
 ```
