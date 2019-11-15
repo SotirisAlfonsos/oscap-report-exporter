@@ -6,6 +6,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/jasonlvhit/gocron"
+	"github.com/pkg/errors"
 	"os"
 	"oscap-report-exporter/oscap"
 	"oscap-report-exporter/oscapLogger"
@@ -21,7 +22,6 @@ func main() {
 }
 
 func startScheduler(configFile string, debugLevel string) {
-
 	logger := createLogger(debugLevel)
 
 	config := oscap.GetConfig(configFile, logger)
@@ -34,8 +34,19 @@ func startScheduler(configFile string, debugLevel string) {
 		level.Debug(logger).Log("msg", "Username "+config.VulnerabilityReportConf.UserName)
 	}
 
+	job, err := createJob(config.ScanDate)
+	if err != nil {
+		level.Error(logger).Log("msg", "Could not schedule job ", "err", err)
+		os.Exit(1)
+	}
+
+	job.At(config.ScanTime).Do(config.OscapVulnerabilityScan, logger)
+	<-gocron.Start()
+}
+
+func createJob(date string) (*gocron.Job, error) {
 	job := &gocron.Job{}
-	switch config.ScanDate {
+	switch date {
 	case "Mon":
 		job = gocron.Every(1).Monday()
 	case "Tue":
@@ -53,12 +64,9 @@ func startScheduler(configFile string, debugLevel string) {
 	case "Daily":
 		job = gocron.Every(1).Day()
 	default:
-		level.Error(logger).Log("msg", "could not set up scheduling", "err", "scheduling option not supported")
-		os.Exit(1)
+		return nil, errors.New("Scheduling option not supported")
 	}
-
-	job.At(config.ScanTime).Do(config.OscapVulnerabilityScan, logger)
-	<-gocron.Start()
+	return job, nil
 }
 
 func createLogger(debugLevel string) log.Logger {

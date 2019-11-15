@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
@@ -13,39 +14,34 @@ var (
 )
 
 func TestSendFileToWebhook(t *testing.T) {
-	errChan := make(chan error)
 
 	fs := FileSend{logger, getPwd() + "/../test-files/", fileFound, webhook}
-	go fs.SendFileToWebhook(errChan)
-	if <-errChan == nil {
-		t.Errorf("Send file to webhook should fail")
-	}
+	err := fs.SendFileToWebhook()
+
+	assert.Error(t, err)
 }
 
 func TestReadFile(t *testing.T) {
 	fs := FileSend{logger, getPwd() + "/../test-files/", fileFound, webhook}
 	byteArray, err := fs.readFile()
-	if err != nil || len(byteArray) <= 0 {
-		t.Errorf("Unexpected error, received %v", err)
-	}
+
+	assert.NoError(t, err)
+	assert.Greater(t, len(byteArray), 1)
 }
 
 func TestReadFileCouldNotFindFile(t *testing.T) {
 	fs := FileSend{logger, getPwd() + "/../test-files/", fileNotFound, webhook}
-	_, err := fs.readFile()
-	if err == nil {
-		t.Errorf("We should have received an error. File does not exist")
-	}
+	err := fs.SendFileToWebhook()
+	//_, err := fs.readFile()
+	assert.Error(t, err)
 }
 
 func TestSendDataToEndpoint(t *testing.T) {
-	errChan := make(chan error)
 
 	fs := NewFileSender(logger, getPwd()+"/../test-files/", fileFound, "")
-	go fs.SendFileToWebhook(errChan)
-	if <-errChan != nil {
-		t.Errorf("Send file to webhook should not happen. The call should return nil since the webhook is an empty string")
-	}
+	err := fs.SendFileToWebhook()
+
+	assert.NoError(t, err)
 }
 
 func getPwd() string {

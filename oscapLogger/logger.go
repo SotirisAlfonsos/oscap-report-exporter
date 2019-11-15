@@ -37,7 +37,7 @@ func (l *AllowedLevel) Set(s string) error {
 	case "error":
 		l.o = level.AllowError()
 	default:
-		return errors.Errorf("unrecognized log level %q", s)
+		return errors.Errorf("unrecognized log level " + s)
 	}
 	l.s = s
 	return nil

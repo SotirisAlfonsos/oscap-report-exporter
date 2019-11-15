@@ -21,21 +21,21 @@ type EmailConf struct {
 }
 
 // SendFileViaEmail handles send report via email as attachment
-func (emailconf *EmailConf) SendFileViaEmail(filePath string, logger log.Logger, err chan error) {
+func (emailconf *EmailConf) SendFileViaEmail(filePath string, logger log.Logger) error {
 	if emailconf.Smarthost == "" || emailconf.From == "" || emailconf.To == "" {
 		level.Debug(logger).Log("msg", "skiping email send. No smarthost, from or to defined")
-		err <- nil
+		return nil
 	}
 
 	if errFileExists := common.FileExists(filePath); errFileExists != nil {
-		err <- errFileExists
+		return errFileExists
 	}
 
 	if errSendingEmail := emailconf.sendEmail(filePath, logger); errSendingEmail != nil {
-		err <- errSendingEmail
+		return errSendingEmail
 	}
 
-	err <- nil
+	return nil
 
 }
 

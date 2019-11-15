@@ -26,22 +26,20 @@ func getLogger() log.Logger {
 }
 
 func TestEmailSenderReportDoesNotExist(t *testing.T) {
-	errChan := make(chan error)
 
 	emailConf := EmailConf{smarthost, from, to, ""}
-	go emailConf.SendFileViaEmail(nonExistentPath, logger, errChan)
-	if <-errChan == nil {
+	err := emailConf.SendFileViaEmail(nonExistentPath, logger)
+	if err == nil {
 		t.Errorf("File should not exist in the path " + nonExistentPath)
 	}
 
 }
 
 func TestEmailSenderCoundNotConctactSmarthost(t *testing.T) {
-	errChan := make(chan error)
 
 	emailConf := EmailConf{smarthost, from, to, password}
-	go emailConf.SendFileViaEmail(reportPath, logger, errChan)
-	if <-errChan == nil {
+	err := emailConf.SendFileViaEmail(reportPath, logger)
+	if err == nil {
 		t.Errorf("Should not be able to send email to " + to + ". Smarthost " + smarthost + " does not exist.")
 	}
 
@@ -56,11 +54,10 @@ func TestEmailSenderNoAuth(t *testing.T) {
 }
 
 func TestEmailSenderNoSmarthostDetails(t *testing.T) {
-	errChan := make(chan error)
 
 	emailConf := EmailConf{"", from, to, password}
-	go emailConf.SendFileViaEmail(reportPath, logger, errChan)
-	if <-errChan != nil {
+	err := emailConf.SendFileViaEmail(reportPath, logger)
+	if err != nil {
 		t.Errorf("Error should be nil and the email should not be sent")
 	}
 }

@@ -11,7 +11,7 @@ func FileExists(fileName string) error {
 	if os.IsNotExist(err) {
 		return errors.Wrap(err, "File "+fileName+" does not exist")
 	} else if info.IsDir() {
-		return errors.Wrap(err, fileName+" is a directory")
+		return errors.New(fileName + " is a directory")
 	} else {
 		return nil
 	}

@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/parnurzeal/gorequest"
@@ -27,23 +28,25 @@ func NewFileSender(logger log.Logger, workingDir string, file string, webhook st
 }
 
 // SendFileToWebhook handles sending the created results xml file to the defined webhook
-func (fs *FileSend) SendFileToWebhook(err chan error) {
+func (fs *FileSend) SendFileToWebhook() error {
 
 	if fs.webhook == "" {
-		err <- nil
+		return nil
 	}
 
 	byteXML, errReadFile := fs.readFile()
 	if errReadFile != nil {
-		err <- errReadFile
+		return errReadFile
 	}
+
+	level.Debug(fs.logger).Log("msg", "Going to sender")
 
 	errWebhook := fs.sender(byteXML)
 	if errWebhook != nil {
-		err <- errWebhook
+		return errWebhook
 	}
 
-	err <- nil
+	return nil
 }
 
 // Read the results file and return its content in a bytearray
@@ -72,16 +75,18 @@ func (fs *FileSend) sender(byteXML []byte) error {
 
 	m := make(map[string]string)
 	m["results"] = string(byteXML)
+
 	request := gorequest.New()
 	_, _, errs := request.Post(fs.webhook).
 		SendMap(m).
 		Retry(3, 20*time.Second, http.StatusBadRequest, http.StatusRequestTimeout, http.StatusInternalServerError, http.StatusGatewayTimeout).
 		End()
 	if errs != nil {
+		respErr := errors.New("Could not send to webhook " + fs.webhook)
 		for _, err := range errs {
-			level.Error(fs.logger).Log("msg", "could not send to webhook "+fs.webhook, "err", err)
+			respErr = errors.Wrap(respErr, fmt.Sprint(err))
 		}
-		return errors.New("posting the file to the webhook failed")
+		return respErr
 	}
 
 	return nil

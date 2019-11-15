@@ -3,6 +3,7 @@ package oscap
 import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -77,7 +78,9 @@ func (conf *Config) OscapVulnerabilityScan(logger log.Logger) {
 		os.Exit(code)
 	}
 
-	conf.sendResultsToChannels(logger)
+	if err := conf.sendResultsToChannels(logger); err != nil {
+		level.Error(logger).Log("err", err)
+	}
 
 	if conf.CleanFiles {
 		filesToClean := []string{resultsFile, reportFile, conf.FileName}
@@ -108,36 +111,48 @@ func (conf *Config) prepareAndRunScan(logger log.Logger) int {
 	return 0
 }
 
-func (conf *Config) sendResultsToChannels(logger log.Logger) {
+func (conf *Config) sendResultsToChannels(logger log.Logger) error {
 
 	errWebhook := make(chan error)
 	errEmail := make(chan error)
 
 	level.Info(logger).Log("msg", "sending results to channels")
 
-	if conf.Webhook != "" {
-		fs := notify.NewFileSender(logger, conf.WorkingFolder, resultsFile, conf.Webhook)
-		go fs.SendFileToWebhook(errWebhook)
-	} else {
-		level.Debug(logger).Log("msg", "no webhook configuration")
+	go func() {
+		if conf.Webhook != "" {
+			fs := notify.NewFileSender(logger, conf.WorkingFolder, resultsFile, conf.Webhook)
+			err := fs.SendFileToWebhook()
+			errWebhook <- err
+		} else {
+			level.Debug(logger).Log("msg", "no webhook configuration")
+			errWebhook <- nil
+		}
+	}()
+
+	go func() {
+		if conf.EmailConfiguration != nil {
+			err := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder+reportFile, logger)
+			errEmail <- err
+		} else {
+			level.Debug(logger).Log("msg", "no email configuration")
+			errEmail <- nil
+		}
+	}()
+
+	errW := <-errWebhook
+	if errW != nil {
+		level.Warn(logger).Log("msg", "could not send report file via webhook", "err", errW)
+	}
+	errE := <-errEmail
+	if errE != nil {
+		level.Warn(logger).Log("msg", "could not send report file via e-mail", "err", errE)
 	}
 
-	if conf.EmailConfiguration != nil {
-		go conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder+reportFile, logger, errEmail)
-	} else {
-		level.Debug(logger).Log("msg", "no email configuration")
+	if errW != nil || errE != nil {
+		return errors.New("Could not send results to all available channels")
 	}
-
-	err := <-errWebhook
-	if err != nil {
-		level.Error(logger).Log("msg", "could not send report file via webhook", "err", err)
-	}
-	err = <-errEmail
-	if err != nil {
-		level.Error(logger).Log("msg", "could not send report file via e-mail", "err", err)
-	}
-
 	level.Info(logger).Log("msg", "results send to available channels")
+	return nil
 }
 
 func (conf *Config) cleanFiles(filesToClean []string, logger log.Logger) {
