@@ -1,0 +1,9 @@
+scan_date: "Monday"
+scan_time: "23:00"
+working_folder: "/tmp/downloads/"
+global_vulnerability_file_name: "com.redhat.rhsa-all.ds.xml"
+clean_files: false
+vulnerability_report:
+  global_vulnerability_report_https_location: "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml"
+  username: ""
+  password: ""
