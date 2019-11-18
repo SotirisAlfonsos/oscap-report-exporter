@@ -1,4 +1,4 @@
-package oscapLogger
+package oscaplogger
 
 import (
 	"github.com/go-kit/kit/log"

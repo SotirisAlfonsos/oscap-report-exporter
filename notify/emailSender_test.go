@@ -3,7 +3,7 @@ package notify
 import (
 	"fmt"
 	"github.com/go-kit/kit/log"
-	"oscap-report-exporter/oscapLogger"
+	"oscap-report-exporter/oscaplogger"
 	"testing"
 )
 
@@ -18,11 +18,11 @@ var (
 )
 
 func getLogger() log.Logger {
-	allowLevel := &oscapLogger.AllowedLevel{}
+	allowLevel := &oscaplogger.AllowedLevel{}
 	if err := allowLevel.Set("debug"); err != nil {
 		fmt.Printf("%v", err)
 	}
-	return oscapLogger.New(allowLevel)
+	return oscaplogger.New(allowLevel)
 }
 
 func TestEmailSenderReportDoesNotExist(t *testing.T) {
