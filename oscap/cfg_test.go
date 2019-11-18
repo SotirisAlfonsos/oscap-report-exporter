@@ -57,7 +57,7 @@ func TestSendResultsToChannelNoWebhookNoMailConf(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPrepareAndRunScanFainlDownload(t *testing.T) {
+func TestPrepareAndRunScanFailDownload(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation = ""
 	code := conf.prepareAndRunScan(logger)

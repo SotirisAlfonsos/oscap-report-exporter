@@ -32,7 +32,7 @@ func TestReadFile(t *testing.T) {
 func TestReadFileCouldNotFindFile(t *testing.T) {
 	fs := FileSend{logger, getPwd() + "/../test-files/", fileNotFound, webhook}
 	err := fs.SendFileToWebhook()
-	//_, err := fs.readFile()
+
 	assert.Error(t, err)
 }
 
