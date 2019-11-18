@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"oscap-report-exporter/oscap"
-	"oscap-report-exporter/oscapLogger"
+	"oscap-report-exporter/oscaplogger"
 )
 
 func main() {
@@ -70,10 +70,10 @@ func createJob(date string) (*gocron.Job, error) {
 }
 
 func createLogger(debugLevel string) log.Logger {
-	allowLevel := &oscapLogger.AllowedLevel{}
+	allowLevel := &oscaplogger.AllowedLevel{}
 	if err := allowLevel.Set(debugLevel); err != nil {
 		fmt.Printf("%v", err)
 	}
-	return oscapLogger.New(allowLevel)
+	return oscaplogger.New(allowLevel)
 
 }

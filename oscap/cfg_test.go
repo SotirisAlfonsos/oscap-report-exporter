@@ -5,7 +5,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
 	"oscap-report-exporter/notify"
-	"oscap-report-exporter/oscapLogger"
+	"oscap-report-exporter/oscaplogger"
 	"testing"
 )
 
@@ -177,9 +177,9 @@ func TestGetConfigFromTestOmitedFile(t *testing.T) {
 }
 
 func getLogger() log.Logger {
-	allowLevel := &oscapLogger.AllowedLevel{}
+	allowLevel := &oscaplogger.AllowedLevel{}
 	if err := allowLevel.Set("debug"); err != nil {
 		fmt.Printf("%v", err)
 	}
-	return oscapLogger.New(allowLevel)
+	return oscaplogger.New(allowLevel)
 }
