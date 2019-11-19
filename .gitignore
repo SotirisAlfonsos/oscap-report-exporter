@@ -2,3 +2,4 @@ oscap-report-exporter.sublime*
 *tar.gz
 results*
 scheduler
+*.spec
