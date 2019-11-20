@@ -16,6 +16,7 @@ type OScan struct {
 	resultsFile   string
 	reportFile    string
 	fileName      string
+	profile       string
 }
 
 // RunOscapScan runs the scan on the host machine
@@ -35,7 +36,7 @@ func (oscan *OScan) RunOscapScan() error {
 // Run oscap scan and store the results in the working folder
 func (oscan *OScan) runScan() error {
 
-	oscapCommand := "oscap xccdf eval --results " + oscan.resultsFile + " --report " + oscan.reportFile + " " + oscan.fileName + " > log.out"
+	oscapCommand := oscan.prepareOscapCommand()
 	cmd := exec.Command("bash", "-c", oscapCommand)
 	cmd.Dir = oscan.workingFolder
 	level.Info(oscan.logger).Log("msg", "Running Oscap command "+cmd.String())
@@ -51,7 +52,7 @@ func (oscan *OScan) runScan() error {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			switch exitError.ExitCode() {
 			case 1:
-				return errors.Wrap(err, "could not complete oscap evaluation successfully. Exit code was "+string(exitError.ExitCode()))
+				return errors.Wrap(err, "could not complete oscap evaluation. Exit code was "+string(exitError.ExitCode()))
 			case 2:
 				level.Info(oscan.logger).Log("msg", "at least one of the rules failed")
 			}
@@ -61,4 +62,37 @@ func (oscan *OScan) runScan() error {
 	}
 	level.Info(oscan.logger).Log("msg", "Results for oscap scan created in folder "+oscan.workingFolder)
 	return nil
+}
+
+// String is used to create the oscap command
+type String string
+
+func (oscan *OScan) prepareOscapCommand() string {
+	oscapCommand := String("oscap xccdf eval ")
+
+	if oscan.profile != "" {
+		oscapCommand = oscapCommand.withProfile(oscan.profile)
+	}
+
+	return string(oscapCommand.
+		withResults(oscan.resultsFile).
+		withReport(oscan.reportFile).
+		withInputFile(oscan.fileName))
+
+}
+
+func (str String) withProfile(profile string) String {
+	return str + String("--profile "+profile+" ")
+}
+
+func (str String) withResults(resultsFile string) String {
+	return str + String("--results "+resultsFile+" ")
+}
+
+func (str String) withReport(reportFile string) String {
+	return str + String("--report "+reportFile+" ")
+}
+
+func (str String) withInputFile(fileName string) String {
+	return str + String(fileName+" > /dev/null")
 }

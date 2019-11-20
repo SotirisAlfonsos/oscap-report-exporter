@@ -39,6 +39,7 @@ type Config struct {
 	FileName                string              `yaml:"global_vulnerability_file_name"`
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
 	Webhook                 string              `yaml:"webhook,omitempty"`
+	Profile                 string              `yaml:"profile,omitempty"`
 	CleanFiles              bool                `yaml:"clean_files"`
 	EmailConfiguration      *notify.EmailConf   `yaml:"email_config,omitempty"`
 }
@@ -90,18 +91,15 @@ func (conf *Config) OscapVulnerabilityScan(logger log.Logger) {
 
 func (conf *Config) prepareAndRunScan(logger log.Logger) int {
 
-	level.Info(logger).Log("msg", "preparing file download")
-
 	vulnerabilityReport := conf.VulnerabilityReportConf
 	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder+conf.FileName, logger); errDownload != nil {
 		level.Error(logger).Log("msg", "file download failed", "err", errDownload)
 		return 1
 	}
 
-	level.Info(logger).Log("msg", "download completed")
 	level.Info(logger).Log("msg", "starting scan")
 
-	oscan := &OScan{logger, conf.WorkingFolder, resultsFile, reportFile, conf.FileName}
+	oscan := &OScan{logger, conf.WorkingFolder, resultsFile, reportFile, conf.FileName, conf.Profile}
 	if errOscapScan := oscan.RunOscapScan(); errOscapScan != nil {
 		level.Error(logger).Log("msg", "cound not run oscap scan in working folder "+conf.WorkingFolder, "err", errOscapScan)
 		return 1
