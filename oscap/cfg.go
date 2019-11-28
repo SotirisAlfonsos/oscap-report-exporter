@@ -16,7 +16,6 @@ var (
 		ScanDate:                "Sun",
 		ScanTime:                "23:00",
 		WorkingFolder:           "/tmp/downloads/",
-		FileName:                "com.redhat.rhsa-all.ds.xml",
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
 		CleanFiles:              true,
 	}
@@ -26,9 +25,10 @@ var (
 		GlobalVulnerabilityReportHTTPSLocation: "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml",
 	}
 
-	resultsFile                   = "results.xml"
-	reportFile                    = "report.html"
-	defaultPermission os.FileMode = 0744
+	resultsFile                           = "results.xml"
+	reportFile                            = "report.html"
+	redhatVulnerabilitiesFile             = "redhat-vulnerabilities-file.xml"
+	defaultPermission         os.FileMode = 0744
 )
 
 // Config contains the configuration from the oscap config file
@@ -36,7 +36,6 @@ type Config struct {
 	ScanDate                string              `yaml:"scan_date"`
 	ScanTime                string              `yaml:"scan_time"`
 	WorkingFolder           string              `yaml:"working_folder"`
-	FileName                string              `yaml:"global_vulnerability_file_name"`
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
 	Webhook                 string              `yaml:"webhook,omitempty"`
 	Profile                 string              `yaml:"profile,omitempty"`
@@ -84,7 +83,7 @@ func (conf *Config) OscapVulnerabilityScan(logger log.Logger) {
 	}
 
 	if conf.CleanFiles {
-		filesToClean := []string{resultsFile, reportFile, conf.FileName}
+		filesToClean := []string{resultsFile, reportFile, redhatVulnerabilitiesFile}
 		conf.cleanFiles(filesToClean, logger)
 	}
 }
@@ -92,14 +91,14 @@ func (conf *Config) OscapVulnerabilityScan(logger log.Logger) {
 func (conf *Config) prepareAndRunScan(logger log.Logger) int {
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder+conf.FileName, logger); errDownload != nil {
+	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder+redhatVulnerabilitiesFile, logger); errDownload != nil {
 		level.Error(logger).Log("msg", "file download failed", "err", errDownload)
 		return 1
 	}
 
 	level.Info(logger).Log("msg", "starting scan")
 
-	oscan := &OScan{logger, conf.WorkingFolder, resultsFile, reportFile, conf.FileName, conf.Profile}
+	oscan := &OScan{logger, conf.WorkingFolder, resultsFile, reportFile, redhatVulnerabilitiesFile, conf.Profile}
 	if errOscapScan := oscan.RunOscapScan(); errOscapScan != nil {
 		level.Error(logger).Log("msg", "cound not run oscap scan in working folder "+conf.WorkingFolder, "err", errOscapScan)
 		return 1

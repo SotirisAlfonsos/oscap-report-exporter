@@ -61,7 +61,7 @@ func TestPrepareAndRunScanFailDownload(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation = ""
 	code := conf.prepareAndRunScan(logger)
-	assert.Equal(t, code, 1)
+	assert.Equal(t, 1, code)
 }
 
 func TestGetConfigDefaults(t *testing.T) {
@@ -74,7 +74,6 @@ func TestGetConfigDefaults(t *testing.T) {
 	assert.Equal(t, configDefault.ScanDate, DefaultConfig.ScanDate, "Date")
 	assert.Equal(t, configDefault.ScanTime, DefaultConfig.ScanTime, "Time")
 	assert.Equal(t, configDefault.WorkingFolder, DefaultConfig.WorkingFolder, "Working folder")
-	assert.Equal(t, configDefault.FileName, DefaultConfig.FileName, "File name")
 	assert.Equal(t, configDefault.Webhook, "", "Webhook")
 	assert.Equal(t, configDefault.Profile, "", "Profile")
 	assert.Equal(t, configDefault.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation,
@@ -92,7 +91,6 @@ func TestGetConfigFromTestFullFile(t *testing.T) {
 	assert.Equal(t, config.ScanDate, "Mon", "Date")
 	assert.Equal(t, config.ScanTime, "23:00", "Time")
 	assert.Equal(t, config.WorkingFolder, "/tmp/downloads/", "Working folder")
-	assert.Equal(t, config.FileName, "com.redhat.rhsa-all.ds.xml", "File name")
 	assert.Equal(t, config.Webhook, "http://localhost:8080", "Webhook")
 	assert.Equal(t, config.Profile, "xccdf_org.ssgproject.content_profile_C2S", "Profile")
 	assert.Equal(t, config.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation,
