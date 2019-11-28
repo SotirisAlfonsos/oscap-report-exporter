@@ -7,13 +7,19 @@ The purpose of this project is to provide a fully configurable scheduler for osc
 ## Functionality
 - Schedule the date and time for the scan
 - Configure the location of the global vulnerability report  
-- Send the reports to a webhook
+- Send the reports to the defined outputs
+
+## Outputs
+- Send the reports to a webhook. Request body format:
+```
+body{"results":< xml formated report >}
+```
 - Send the <i>.html</i> report to recipients via e-mail
 
 ## Installation
 - Download the latest release containing the binary
 ```
-wget https://github.com/SotirisAlfonsos/oscap-report-exporter/releases/download/<version>/oscap-exporter-<version>.tar.gz
+wget https://github.com/SotirisAlfonsos/oscap-report-exporter/releases/download/<version>/oscap-exporter-<version>.<arch>..tar.gz
 ```
 - Extract the binary to a folder
 - Create configuration file
