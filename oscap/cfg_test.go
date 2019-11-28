@@ -4,12 +4,19 @@ import (
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"oscap-report-exporter/notify"
 	"oscap-report-exporter/oscaplogger"
+	"strings"
 	"testing"
+	"time"
 )
 
-var logger = getLogger()
+var (
+	logger               = getLogger()
+	dummyXMLResultsFile  = "results.xml"
+	dummyHTMLResultsFile = "report.html"
+)
 
 func TestSendResultsToChannel(t *testing.T) {
 	conf := GetConfig("", logger)
@@ -20,7 +27,7 @@ func TestSendResultsToChannel(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.EqualError(t, err, "Could not send results to all available channels")
 }
 
@@ -33,7 +40,7 @@ func TestSendResultsToChannelNoWebhook(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.EqualError(t, err, "Could not send results to all available channels")
 }
 
@@ -46,22 +53,40 @@ func TestSendResultsToChannelNoWebhookNoSmarthost(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.NoError(t, err)
 }
 
 func TestSendResultsToChannelNoWebhookNoMailConf(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.Webhook = ""
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.NoError(t, err)
 }
 
 func TestPrepareAndRunScanFailDownload(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation = ""
-	code := conf.prepareAndRunScan(logger)
+	code := conf.prepareAndRunScan(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.Equal(t, 1, code)
+}
+
+func TestSetReportFileName(t *testing.T) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		t.Errorf("Can not get hostname. Fail test")
+	}
+	date := time.Now().Format("2006-Jan-02")
+	fmt.Printf(setReportFileName("xml", logger))
+	xmlFileSplit := strings.Split(setReportFileName("xml", logger), "_")
+	assert.Equal(t, "report", xmlFileSplit[0])
+	assert.Equal(t, hostname, xmlFileSplit[1])
+	assert.Equal(t, date+".xml", xmlFileSplit[2])
+
+	htmlFileSplit := strings.Split(setReportFileName("html", logger), "_")
+	assert.Equal(t, "report", htmlFileSplit[0])
+	assert.Equal(t, hostname, htmlFileSplit[1])
+	assert.Equal(t, date+".html", htmlFileSplit[2])
 }
 
 func TestGetConfigDefaults(t *testing.T) {
