@@ -1,5 +1,6 @@
-oscap-report-exporter.sublime*
+oscap-report-exporter*
 *tar.gz
 results*
 scheduler
 *.spec
+oscap-exporter

@@ -4,12 +4,19 @@ import (
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"oscap-report-exporter/notify"
 	"oscap-report-exporter/oscaplogger"
+	"strings"
 	"testing"
+	"time"
 )
 
-var logger = getLogger()
+var (
+	logger               = getLogger()
+	dummyXMLResultsFile  = "results.xml"
+	dummyHTMLResultsFile = "report.html"
+)
 
 func TestSendResultsToChannel(t *testing.T) {
 	conf := GetConfig("", logger)
@@ -20,7 +27,7 @@ func TestSendResultsToChannel(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.EqualError(t, err, "Could not send results to all available channels")
 }
 
@@ -33,7 +40,7 @@ func TestSendResultsToChannelNoWebhook(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.EqualError(t, err, "Could not send results to all available channels")
 }
 
@@ -46,22 +53,40 @@ func TestSendResultsToChannelNoWebhookNoSmarthost(t *testing.T) {
 		To:        "to",
 		Password:  "",
 	}
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.NoError(t, err)
 }
 
 func TestSendResultsToChannelNoWebhookNoMailConf(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.Webhook = ""
-	err := conf.sendResultsToChannels(logger)
+	err := conf.sendResultsToChannels(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
 	assert.NoError(t, err)
 }
 
 func TestPrepareAndRunScanFailDownload(t *testing.T) {
 	conf := GetConfig("", logger)
 	conf.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation = ""
-	code := conf.prepareAndRunScan(logger)
-	assert.Equal(t, code, 1)
+	code := conf.prepareAndRunScan(dummyXMLResultsFile, dummyHTMLResultsFile, logger)
+	assert.Equal(t, 1, code)
+}
+
+func TestSetReportFileName(t *testing.T) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		t.Errorf("Can not get hostname. Fail test")
+	}
+	date := time.Now().Format("2006-Jan-02")
+	fmt.Printf(setReportFileName("xml", logger))
+	xmlFileSplit := strings.Split(setReportFileName("xml", logger), "_")
+	assert.Equal(t, "report", xmlFileSplit[0])
+	assert.Equal(t, hostname, xmlFileSplit[1])
+	assert.Equal(t, date+".xml", xmlFileSplit[2])
+
+	htmlFileSplit := strings.Split(setReportFileName("html", logger), "_")
+	assert.Equal(t, "report", htmlFileSplit[0])
+	assert.Equal(t, hostname, htmlFileSplit[1])
+	assert.Equal(t, date+".html", htmlFileSplit[2])
 }
 
 func TestGetConfigDefaults(t *testing.T) {
@@ -71,35 +96,14 @@ func TestGetConfigDefaults(t *testing.T) {
 	configFileDefault := ""
 	configDefault := GetConfig(configFileDefault, logger)
 
-	if configDefault.ScanDate != DefaultConfig.ScanDate {
-		t.Errorf("The date as it was parsed by the exaple oscap config is wrong " + configDefault.ScanDate +
-			". Should be " + DefaultConfig.ScanDate)
-	}
-	if configDefault.ScanTime != DefaultConfig.ScanTime {
-		t.Errorf("The default time for the scan is wrong " + configDefault.ScanDate +
-			". Should be " + DefaultConfig.ScanTime)
-	}
-	if configDefault.WorkingFolder != DefaultConfig.WorkingFolder {
-		t.Errorf("The default working folder for the scan is wrong " + configDefault.WorkingFolder +
-			". Should be " + DefaultConfig.WorkingFolder)
-	}
-	if configDefault.FileName != DefaultConfig.FileName {
-		t.Errorf("The default working folder for the scan is wrong " + configDefault.FileName +
-			". Should be " + DefaultConfig.FileName)
-	}
-	if configDefault.Webhook != "" {
-		t.Errorf("The default webhook configuration is wrong %v . Should be nil", configDefault.Webhook)
-	}
-	expectedVulRepURL := DefaultConfig.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
-	gotVulRepURL := configDefault.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
-	if gotVulRepURL != expectedVulRepURL {
-		t.Errorf("The default global vulnerability report url for the scan is wrong " + gotVulRepURL +
-			". Should be " + expectedVulRepURL)
-	}
-
-	if configDefault.EmailConfiguration != nil {
-		t.Errorf("The default email configuration is wrong %v . Should be nil", configDefault.EmailConfiguration)
-	}
+	assert.Equal(t, configDefault.ScanDate, DefaultConfig.ScanDate, "Date")
+	assert.Equal(t, configDefault.ScanTime, DefaultConfig.ScanTime, "Time")
+	assert.Equal(t, configDefault.WorkingFolder, DefaultConfig.WorkingFolder, "Working folder")
+	assert.Equal(t, configDefault.Webhook, "", "Webhook")
+	assert.Equal(t, configDefault.Profile, "", "Profile")
+	assert.Equal(t, configDefault.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation,
+		DefaultConfig.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation, "Vulnerability report https location")
+	assert.Nil(t, configDefault.EmailConfiguration)
 }
 
 func TestGetConfigFromTestFullFile(t *testing.T) {
@@ -109,55 +113,17 @@ func TestGetConfigFromTestFullFile(t *testing.T) {
 	configFile := "../test-files/oscap-full-config.yaml"
 	config := GetConfig(configFile, logger)
 
-	dateExpected := "Mon"
-	if config.ScanDate != dateExpected {
-		t.Errorf("The date as it was parsed by the exaple oscap config is wrong " + config.ScanDate +
-			". Should be " + dateExpected)
-	}
-	timeExpected := "23:00"
-	if config.ScanTime != timeExpected {
-		t.Errorf("The time as it was parsed by the exaple oscap config is wrong " + config.ScanTime +
-			". Should be " + timeExpected)
-	}
-	workFolderExpected := "/tmp/downloads/"
-	if config.WorkingFolder != workFolderExpected {
-		t.Errorf("The working folder as it was parsed by the exaple oscap config is wrong " + config.WorkingFolder +
-			". Should be " + workFolderExpected)
-	}
-	globVulFileName := "com.redhat.rhsa-all.ds.xml"
-	if config.FileName != globVulFileName {
-		t.Errorf("The vulnerability file name as it was parsed by the exaple oscap config is wrong " + config.FileName +
-			". Should be " + globVulFileName)
-	}
-	webhook := "http://localhost:8080"
-	if config.Webhook != webhook {
-		t.Errorf("The webhook as it was parsed by the exaple oscap config is wrong " + config.Webhook +
-			". Should be " + webhook)
-	}
-	expectedVulRepURL := "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml"
-	gotVulRepURL := config.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation
-	if gotVulRepURL != expectedVulRepURL {
-		t.Errorf("The vulnerability report url as it was parsed by the exaple oscap config is wrong " +
-			gotVulRepURL + ". Should be " + expectedVulRepURL)
-	}
+	assert.Equal(t, config.ScanDate, "Mon", "Date")
+	assert.Equal(t, config.ScanTime, "23:00", "Time")
+	assert.Equal(t, config.WorkingFolder, "/tmp/downloads/", "Working folder")
+	assert.Equal(t, config.Webhook, "http://localhost:8080", "Webhook")
+	assert.Equal(t, config.Profile, "xccdf_org.ssgproject.content_profile_C2S", "Profile")
+	assert.Equal(t, config.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation,
+		"https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml", "Vulnerability report https location")
+	assert.Equal(t, config.EmailConfiguration.Smarthost, "", "Smarthost")
+	assert.Equal(t, config.EmailConfiguration.To, "", "To")
+	assert.Equal(t, config.EmailConfiguration.Password, "", "Password")
 
-	expectedEmailSmarthost := ""
-	if config.EmailConfiguration.Smarthost != expectedEmailSmarthost {
-		t.Errorf("The smarthost as it was parsed by the exaple oscap config is wrong " +
-			config.EmailConfiguration.Smarthost + ". Should be " + expectedEmailSmarthost)
-	}
-
-	expectedEmailTo := ""
-	if config.EmailConfiguration.To != expectedEmailTo {
-		t.Errorf("The To as it was parsed by the exaple oscap config is wrong " +
-			config.EmailConfiguration.To + ". Should be " + expectedEmailTo)
-	}
-
-	expectedEmailPassword := ""
-	if config.EmailConfiguration.Password != expectedEmailPassword {
-		t.Errorf("The password as it was parsed by the exaple oscap config is wrong " +
-			config.EmailConfiguration.Password + ". Should be " + expectedEmailPassword + ".")
-	}
 }
 
 func TestGetConfigFromTestOmitedFile(t *testing.T) {

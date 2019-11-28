@@ -45,7 +45,7 @@ func startScheduler(configFile string, debugLevel string) {
 }
 
 func createJob(date string) (*gocron.Job, error) {
-	job := &gocron.Job{}
+	var job *gocron.Job
 	switch date {
 	case "Mon":
 		job = gocron.Every(1).Monday()

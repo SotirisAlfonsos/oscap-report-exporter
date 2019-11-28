@@ -8,12 +8,11 @@ scan_time: "23:00"
 #and the location when the results of the scan will be stored. Defaults to '/tmp/downloads/'
 working_folder: "/tmp/downloads/"
 
-#The name of the global vulnerabilities file as we want to use it localy. Defaults to 'com.redhat.rhsa-all.ds.xml' 
-global_vulnerability_file_name: "com.redhat.rhsa-all.ds.xml"
-
 #Webhook where the report will be sent. We send the report.xml file content by default.
 #The webhook should be able to handle xml input, via a POST request. Defaults to 'http://localhost:8080' 
 webhook: "http://localhost:8080"
+
+profile: "xccdf_org.ssgproject.content_profile_C2S"
 
 #whether or not to clean the downloaded and created files after the scan. Defaults to true
 clean_files: false

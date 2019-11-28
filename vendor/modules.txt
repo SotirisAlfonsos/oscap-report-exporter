@@ -1,3 +1,5 @@
+# github.com/davecgh/go-spew v1.1.0
+github.com/davecgh/go-spew/spew
 # github.com/go-kit/kit v0.9.0
 github.com/go-kit/kit/log
 github.com/go-kit/kit/log/level
@@ -11,9 +13,13 @@ github.com/kr/logfmt
 github.com/parnurzeal/gorequest
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/scorredoira/email v0.0.0-20190509221456-365bb6a9fa0c
 github.com/scorredoira/email
-# golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+# github.com/stretchr/testify v1.4.0
+github.com/stretchr/testify/assert
+# golang.org/x/net v0.0.0-20190311183353-d8887717615a
 golang.org/x/net/publicsuffix
 # gopkg.in/yaml.v2 v2.2.4
 gopkg.in/yaml.v2

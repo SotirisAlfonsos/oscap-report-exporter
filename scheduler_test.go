@@ -2,11 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"oscap-report-exporter/oscaplogger"
 	"testing"
 )
 
@@ -49,12 +46,4 @@ func TestStartSchedulerWrongSchedulingOption(t *testing.T) {
 func TestStartSchedulerCorrectSchedulingOption(t *testing.T) {
 	_, err := createJob("Mon")
 	assert.NoError(t, err)
-}
-
-func getLogger() log.Logger {
-	allowLevel := &oscaplogger.AllowedLevel{}
-	if err := allowLevel.Set("debug"); err != nil {
-		fmt.Printf("%v", err)
-	}
-	return oscaplogger.New(allowLevel)
 }

@@ -7,13 +7,19 @@ The purpose of this project is to provide a fully configurable scheduler for osc
 ## Functionality
 - Schedule the date and time for the scan
 - Configure the location of the global vulnerability report  
-- Send the reports to a webhook
+- Send the reports to the defined outputs
+
+## Outputs
+- Send the reports to a webhook. Request body format:
+```
+body{"results":< xml formated report >}
+```
 - Send the <i>.html</i> report to recipients via e-mail
 
 ## Installation
 - Download the latest release containing the binary
 ```
-wget https://github.com/SotirisAlfonsos/oscap-report-exporter/releases/download/<version>/oscap-exporter-<version>.tar.gz
+wget https://github.com/SotirisAlfonsos/oscap-report-exporter/releases/download/<version>/oscap-exporter-<version>.<arch>..tar.gz
 ```
 - Extract the binary to a folder
 - Create configuration file
@@ -27,9 +33,6 @@ scan_time: "23:00"
 #The working folder is the location where the global vulnerability reports file be downloaded,
 #and the location when the results of the scan will be stored. Defaults to '/tmp/downloads/'
 working_folder: "/tmp/downloads/"
-
-#The name of the global vulnerabilities file as we want to use it localy. Defaults to 'com.redhat.rhsa-all.ds.xml' 
-global_vulnerability_file_name: "com.redhat.rhsa-all.ds.xml"
 
 #Webhook where the report will be sent. We send the report.xml file content by default.
 #The webhook should be able to handle xml input, via a POST request. Defaults to 'http://localhost:8080' 

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"oscap-report-exporter/notify"
+	"time"
 )
 
 var (
@@ -16,7 +17,6 @@ var (
 		ScanDate:                "Sun",
 		ScanTime:                "23:00",
 		WorkingFolder:           "/tmp/downloads/",
-		FileName:                "com.redhat.rhsa-all.ds.xml",
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
 		CleanFiles:              true,
 	}
@@ -26,9 +26,8 @@ var (
 		GlobalVulnerabilityReportHTTPSLocation: "https://www.redhat.com/security/data/metrics/ds/com.redhat.rhsa-all.ds.xml",
 	}
 
-	resultsFile                   = "results.xml"
-	reportFile                    = "report.html"
-	defaultPermission os.FileMode = 0744
+	redhatVulnerabilitiesFile             = "redhat-vulnerabilities-file.xml"
+	defaultPermission         os.FileMode = 0744
 )
 
 // Config contains the configuration from the oscap config file
@@ -36,9 +35,9 @@ type Config struct {
 	ScanDate                string              `yaml:"scan_date"`
 	ScanTime                string              `yaml:"scan_time"`
 	WorkingFolder           string              `yaml:"working_folder"`
-	FileName                string              `yaml:"global_vulnerability_file_name"`
 	VulnerabilityReportConf VulnerabilityReport `yaml:"vulnerability_report"`
 	Webhook                 string              `yaml:"webhook,omitempty"`
+	Profile                 string              `yaml:"profile,omitempty"`
 	CleanFiles              bool                `yaml:"clean_files"`
 	EmailConfiguration      *notify.EmailConf   `yaml:"email_config,omitempty"`
 }
@@ -70,38 +69,38 @@ func (conf *Config) unmarshalConfFromFile(file string, logger log.Logger) {
 // OscapVulnerabilityScan is the main function that handles the scan and forwarding of all reports
 func (conf *Config) OscapVulnerabilityScan(logger log.Logger) {
 
+	reportXMLFile := setReportFileName("xml", logger)
+	reportHTMLFile := setReportFileName("html", logger)
+
 	if code := createDir(conf.WorkingFolder, defaultPermission, logger); code != 0 {
 		os.Exit(code)
 	}
 
-	if code := conf.prepareAndRunScan(logger); code != 0 {
+	if code := conf.prepareAndRunScan(reportXMLFile, reportHTMLFile, logger); code != 0 {
 		os.Exit(code)
 	}
 
-	if err := conf.sendResultsToChannels(logger); err != nil {
+	if err := conf.sendResultsToChannels(reportXMLFile, reportHTMLFile, logger); err != nil {
 		level.Error(logger).Log("err", err)
 	}
 
 	if conf.CleanFiles {
-		filesToClean := []string{resultsFile, reportFile, conf.FileName}
+		filesToClean := []string{reportXMLFile, reportHTMLFile, redhatVulnerabilitiesFile}
 		conf.cleanFiles(filesToClean, logger)
 	}
 }
 
-func (conf *Config) prepareAndRunScan(logger log.Logger) int {
-
-	level.Info(logger).Log("msg", "preparing file download")
+func (conf *Config) prepareAndRunScan(reportXMLFile string, reportHTMLFile string, logger log.Logger) int {
 
 	vulnerabilityReport := conf.VulnerabilityReportConf
-	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder+conf.FileName, logger); errDownload != nil {
+	if errDownload := vulnerabilityReport.DownloadFile(conf.WorkingFolder+redhatVulnerabilitiesFile, logger); errDownload != nil {
 		level.Error(logger).Log("msg", "file download failed", "err", errDownload)
 		return 1
 	}
 
-	level.Info(logger).Log("msg", "download completed")
 	level.Info(logger).Log("msg", "starting scan")
 
-	oscan := &OScan{logger, conf.WorkingFolder, resultsFile, reportFile, conf.FileName}
+	oscan := &OScan{logger, conf.WorkingFolder, reportXMLFile, reportHTMLFile, redhatVulnerabilitiesFile, conf.Profile}
 	if errOscapScan := oscan.RunOscapScan(); errOscapScan != nil {
 		level.Error(logger).Log("msg", "cound not run oscap scan in working folder "+conf.WorkingFolder, "err", errOscapScan)
 		return 1
@@ -111,7 +110,7 @@ func (conf *Config) prepareAndRunScan(logger log.Logger) int {
 	return 0
 }
 
-func (conf *Config) sendResultsToChannels(logger log.Logger) error {
+func (conf *Config) sendResultsToChannels(reportXMLFile string, reportHTMLFile string, logger log.Logger) error {
 
 	errWebhook := make(chan error)
 	errEmail := make(chan error)
@@ -120,7 +119,7 @@ func (conf *Config) sendResultsToChannels(logger log.Logger) error {
 
 	go func() {
 		if conf.Webhook != "" {
-			fs := notify.NewFileSender(logger, conf.WorkingFolder, resultsFile, conf.Webhook)
+			fs := notify.NewFileSender(logger, conf.WorkingFolder, reportXMLFile, conf.Webhook)
 			err := fs.SendFileToWebhook()
 			errWebhook <- err
 		} else {
@@ -131,7 +130,7 @@ func (conf *Config) sendResultsToChannels(logger log.Logger) error {
 
 	go func() {
 		if conf.EmailConfiguration != nil {
-			err := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder+reportFile, logger)
+			err := conf.EmailConfiguration.SendFileViaEmail(conf.WorkingFolder+reportHTMLFile, logger)
 			errEmail <- err
 		} else {
 			level.Debug(logger).Log("msg", "no email configuration")
@@ -163,6 +162,17 @@ func (conf *Config) cleanFiles(filesToClean []string, logger log.Logger) {
 		}
 		level.Debug(logger).Log("msg", "Removed file "+fileName)
 	}
+}
+
+func setReportFileName(reportType string, logger log.Logger) string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		level.Warn(logger).Log("msg", "could not get Hostname")
+	}
+
+	date := time.Now().Format("2006-Jan-02")
+
+	return "report_" + hostname + "_" + date + "." + reportType
 }
 
 func createDir(dir string, permission os.FileMode, logger log.Logger) int {

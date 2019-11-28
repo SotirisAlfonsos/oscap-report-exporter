@@ -46,8 +46,8 @@ func (l *AllowedLevel) Set(s string) error {
 // New returns a new leveled oklog logger. Each logged line will be annotated
 // with a timestamp. The output always goes to stderr.
 func New(allowedLevel *AllowedLevel) log.Logger {
-	var l log.Logger
-	l = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+
+	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
 	l = level.NewFilter(l, allowedLevel.o)
 	l = log.With(l, "ts", timestampFormat, "caller", log.DefaultCaller)
