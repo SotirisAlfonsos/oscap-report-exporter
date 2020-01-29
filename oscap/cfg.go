@@ -1,14 +1,15 @@
 package oscap
 
 import (
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"oscap-report-exporter/notify"
 	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -19,6 +20,7 @@ var (
 		WorkingFolder:           "/tmp/downloads/",
 		VulnerabilityReportConf: DefaultVulnerabilityReportConf,
 		CleanFiles:              true,
+		Module:                  "xccdf",
 	}
 
 	// DefaultVulnerabilityReportConf provides a default configuration for
@@ -40,6 +42,7 @@ type Config struct {
 	Profile                 string              `yaml:"profile,omitempty"`
 	CleanFiles              bool                `yaml:"clean_files"`
 	EmailConfiguration      *notify.EmailConf   `yaml:"email_config,omitempty"`
+	Module                  string              `yaml:"module"`
 }
 
 // GetConfig unmarshars the received conf file to the config struct
@@ -100,7 +103,7 @@ func (conf *Config) prepareAndRunScan(reportXMLFile string, reportHTMLFile strin
 
 	level.Info(logger).Log("msg", "starting scan")
 
-	oscan := &OScan{logger, conf.WorkingFolder, reportXMLFile, reportHTMLFile, redhatVulnerabilitiesFile, conf.Profile}
+	oscan := &OScan{logger, conf.WorkingFolder, reportXMLFile, reportHTMLFile, redhatVulnerabilitiesFile, conf.Profile, conf.Module}
 	if errOscapScan := oscan.RunOscapScan(); errOscapScan != nil {
 		level.Error(logger).Log("msg", "cound not run oscap scan in working folder "+conf.WorkingFolder, "err", errOscapScan)
 		return 1

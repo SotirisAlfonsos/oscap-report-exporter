@@ -13,6 +13,7 @@ require (
 	github.com/scorredoira/email v0.0.0-20190509221456-365bb6a9fa0c
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/stretchr/testify v1.4.0
+	golang.org/x/tools v0.0.0-20200129210300-11f6c2ac6da0 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	moul.io/http2curl v1.0.0 // indirect
 )

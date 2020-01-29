@@ -2,11 +2,12 @@ package oscap
 
 import (
 	"bytes"
+	"os/exec"
+	"oscap-report-exporter/common"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"os/exec"
-	"oscap-report-exporter/common"
 )
 
 // OScan contains some configuration for the execution of the scan
@@ -17,6 +18,7 @@ type OScan struct {
 	reportFile    string
 	fileName      string
 	profile       string
+	module        string
 }
 
 // RunOscapScan runs the scan on the host machine
@@ -36,7 +38,10 @@ func (oscan *OScan) RunOscapScan() error {
 // Run oscap scan and store the results in the working folder
 func (oscan *OScan) runScan() error {
 
-	oscapCommand := oscan.prepareOscapCommand()
+	oscapCommand, err := oscan.prepareOscapCommand()
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command("bash", "-c", oscapCommand)
 	cmd.Dir = oscan.workingFolder
 	level.Info(oscan.logger).Log("msg", "Running Oscap command "+cmd.String())
@@ -47,8 +52,7 @@ func (oscan *OScan) runScan() error {
 	/** oscap returns 0 if all rules pass.
 	If there is an error during evaluation, the return code is 1.
 	If there is at least one rule with either fail or unknown result, oscap-scan finishes with return code 2. **/
-	err := cmd.Run()
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			switch exitError.ExitCode() {
 			case 1:
@@ -67,8 +71,11 @@ func (oscan *OScan) runScan() error {
 // String is used to create the oscap command
 type String string
 
-func (oscan *OScan) prepareOscapCommand() string {
-	oscapCommand := String("oscap xccdf eval ")
+func (oscan *OScan) prepareOscapCommand() (string, error) {
+	if oscan.module != "oval" && oscan.module != "xccdf" {
+		return "", errors.New("Module option selected is not valid. Valid options [ oval, xccdf ]")
+	}
+	oscapCommand := String("oscap " + oscan.module + " eval ")
 
 	if oscan.profile != "" {
 		oscapCommand = oscapCommand.withProfile(oscan.profile)
@@ -77,7 +84,7 @@ func (oscan *OScan) prepareOscapCommand() string {
 	return string(oscapCommand.
 		withResults(oscan.resultsFile).
 		withReport(oscan.reportFile).
-		withInputFile(oscan.fileName))
+		withInputFile(oscan.fileName)), nil
 
 }
 

@@ -18,6 +18,9 @@ profile: ""
 #whether or not to clean the downloaded and created files after the scan. Defaults to true
 clean_files: false
 
+#which module to run. SHould be either oval or xccdf
+module: "xccdf"
+
 #Location of the global vulnerability report. Defaults to the official Red Hat location.
 #You can also configure your own location. Basic auth credentials will be used if provided for the download.
 vulnerability_report:

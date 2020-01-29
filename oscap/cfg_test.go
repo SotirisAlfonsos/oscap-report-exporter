@@ -2,14 +2,15 @@ package oscap
 
 import (
 	"fmt"
-	"github.com/go-kit/kit/log"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"oscap-report-exporter/notify"
 	"oscap-report-exporter/oscaplogger"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -101,6 +102,7 @@ func TestGetConfigDefaults(t *testing.T) {
 	assert.Equal(t, configDefault.WorkingFolder, DefaultConfig.WorkingFolder, "Working folder")
 	assert.Equal(t, configDefault.Webhook, "", "Webhook")
 	assert.Equal(t, configDefault.Profile, "", "Profile")
+	assert.Equal(t, configDefault.Module, "xccdf", "Module")
 	assert.Equal(t, configDefault.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation,
 		DefaultConfig.VulnerabilityReportConf.GlobalVulnerabilityReportHTTPSLocation, "Vulnerability report https location")
 	assert.Nil(t, configDefault.EmailConfiguration)
